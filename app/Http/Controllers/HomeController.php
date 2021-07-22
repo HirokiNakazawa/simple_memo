@@ -46,4 +46,11 @@ class HomeController extends Controller
         $edit_memo = Memo::find($id);
         return view('edit', compact('memos', 'edit_memo'));
     }
+
+    public function update (Request $request) {
+        $posts = $request->all();
+        //dd -> データ確認
+        Memo::where('id', $posts['memo_id'])->update(['content' => $posts['content']]);
+        return redirect(route('home'));
+    }
 }
