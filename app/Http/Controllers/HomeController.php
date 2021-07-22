@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
 use App\Models\Memo;
+use App\Models\Tag;
+use App\Models\MemoTag;
+use DB;
 
 class HomeController extends Controller
 {
@@ -33,8 +36,17 @@ class HomeController extends Controller
 
     public function store (Request $request) {
         $posts = $request->all();
-        //dd -> データ確認
-        Memo::insert(['content' => $posts['content'], 'user_id' => \Auth::id()]);
+
+        //トランザクション開始
+        DB::transaction(function() use($posts) {
+            $memo_id = Memo::insertGetId(['content' => $posts['content'], 'user_id' => \Auth::id()]);
+            $tag_exists = Tag::where('user_id', '=', \Auth::id())->where('name', '=', $posts['new_tag'])->exists();
+            if(!empty($posts['new_tag']) && $tag_exists == false) {
+                $tag_id = Tag::insertGetId(['user_id' => \Auth::id(), 'name' => $posts['new_tag']]);
+                MemoTag::insert(['memo_id' => $memo_id, 'tag_id' => $tag_id]);
+            }
+        });
+        //トランザクション修了
         return redirect(route('home'));
     }
 
