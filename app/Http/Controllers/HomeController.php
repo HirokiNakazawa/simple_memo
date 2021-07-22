@@ -31,7 +31,9 @@ class HomeController extends Controller
         //メモデータを取得
         $memos = Memo::select('memos.*')->where('user_id', '=', \Auth::id())
                     ->whereNull('deleted_at')->orderBy('updated_at', 'DESC')->get();
-        return view('create', compact('memos'));
+        $tags = Tag::where('user_id', '=', \Auth::id())->whereNull('deleted_at')
+                    ->orderBy('id', 'DESC')->get();
+        return view('create', compact('memos', 'tags'));
     }
 
     public function store (Request $request) {
@@ -44,6 +46,12 @@ class HomeController extends Controller
             if(!empty($posts['new_tag']) && $tag_exists == false) {
                 $tag_id = Tag::insertGetId(['user_id' => \Auth::id(), 'name' => $posts['new_tag']]);
                 MemoTag::insert(['memo_id' => $memo_id, 'tag_id' => $tag_id]);
+            }
+
+            if(!empty($posts['tags'][0])) {
+                foreach($posts['tags'] as $tag) {
+                    MemoTag::insert(['memo_id' => $memo_id, 'tag_id' => $tag]);
+                }
             }
         });
         //トランザクション修了
