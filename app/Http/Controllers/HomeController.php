@@ -54,7 +54,7 @@ class HomeController extends Controller
                 }
             }
         });
-        //トランザクション修了
+        //トランザクション終了
         return redirect(route('home'));
     }
 
@@ -81,14 +81,25 @@ class HomeController extends Controller
 
     public function update (Request $request) {
         $posts = $request->all();
-        //dd -> データ確認
-        Memo::where('id', $posts['memo_id'])->update(['content' => $posts['content']]);
+        //トランザクション開始
+        DB::transaction(function() use($posts) {
+            Memo::where('id', $posts['memo_id'])->update(['content' => $posts['content']]);
+            MemoTag::where('memo_id', '=', $posts['memo_id'])->delete();
+            foreach($posts['tags'] as $tag) {
+                MemoTag::insert(['memo_id' => $posts['memo_id'], 'tag_id' => $tag]);
+            }
+            $tag_exists = Tag::where('user_id', '=', \Auth::id())->where('name', '=', $posts['new_tag'])->exists();
+            if(!empty($posts['new_tag']) && $tag_exists == false) {
+                $tag_id = Tag::insertGetId(['user_id' => \Auth::id(), 'name' => $posts['new_tag']]);
+                MemoTag::insert(['memo_id' => $posts['memo_id'], 'tag_id' => $tag_id]);
+            }
+        });
+        //トランザクション終了
         return redirect(route('home'));
     }
 
     public function destroy (Request $request) {
         $posts = $request->all();
-        //dd -> データ確認
         Memo::where('id', $posts['memo_id'])->update(['deleted_at' => date("Y-m-d H:i:s", time())]);
         return redirect(route('home'));
     }
