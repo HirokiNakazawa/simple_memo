@@ -16,6 +16,9 @@
             <div class="mb-3">
                 <textarea class="form-control" name="content" rows="3" placeholder="ここにメモを入力">{{$edit_memo[0]['content']}}</textarea>
             </div>
+            @error('content')
+                <div class="alert alert-danger">メモ内容を入力してください!</div>
+            @enderror
         @foreach($tags as $tag)
             <div class="form-check form-check-inline mb-3">
                 <input class="form-check-input" type="checkbox" name="tags[]" id="{{$tag['id']}}"
